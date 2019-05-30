@@ -183,7 +183,7 @@ namespace ATLifier
             foreach (string s in old_sprite_def)
             {
                 if (s.Contains("closedsad") || s.Contains("closedhappy") || s.Contains("wink"))
-                    return old_sprite_def;
+                    return new List<string>();
             }
 
             List<string> new_sprite_def = new List<string>();
@@ -215,6 +215,146 @@ namespace ATLifier
         public static MonikaSprite GetSpriteFromCode(string spritecode)
         {
             string eyes="", eyebrows="", mouth="", sweat="", blush="", tears="", arms="", left="", right="", head="";
+
+            //Eyebrows
+            switch (spritecode[2])
+            {
+                case 'f':
+                    eyebrows = "furrowed";
+                    break;
+                case 'u':
+                    eyebrows = "up";
+                    break;
+                case 'k':
+                    eyebrows = "knit";
+                    break;
+                case 's':
+                    eyebrows = "mid";
+                    break;
+                case 't':
+                    eyebrows = "think";
+                    break;
+            }
+            spritecode = spritecode.Remove(2,1);
+
+            //Eyes
+            switch (spritecode[1])
+            {
+                case 'e':
+                    eyes = "normal";
+                    break;
+                case 'w':
+                    eyes = "wide";
+                    break;
+                case 's':
+                    eyes = "sparkle";
+                    break;
+                case 't':
+                    eyes = "smug";
+                    break;
+                case 'c':
+                    eyes = "crazy";
+                    break;
+                case 'r':
+                    eyes = "right";
+                    break;
+                case 'l':
+                    eyes = "left";
+                    break;
+                case 'h':
+                    eyes = "closedhappy";
+                    break;
+                case 'd':
+                    eyes = "closedsad";
+                    break;
+                case 'k':
+                    eyes = "winkleft";
+                    break;
+                case 'n':
+                    eyes = "winkright";
+                    break;
+            }
+            spritecode = spritecode.Remove(1,1);
+
+            //Mouth
+            switch (spritecode[spritecode.Length-1])
+            {
+                case 'a':
+                    mouth = "smile";
+                    head = "a";
+                    break;
+                case 'b':
+                    mouth = "big";
+                    head = "b";
+                    break;
+                case 'c':
+                    mouth = "smirk";
+                    head = "h";
+                    break;
+                case 'd':
+                    mouth = "small";
+                    head = "i";
+                    break;
+                case 'o':
+                    mouth = "gasp";
+                    head = "d";
+                    break;
+                case 'u':
+                    mouth = "smug";
+                    head = "j";
+                    break;
+                case 'w':
+                    mouth = "wide";
+                    head = "b";
+                    break;
+                case 'x':
+                    mouth = "disgust";
+                    head = "f";
+                    break;
+                case 'p':
+                    mouth = "pout";
+                    head = "h";
+                    break;
+                case 't':
+                    mouth = "triangle";
+                    head = "a";
+                    break;
+            }
+            spritecode = spritecode.Remove(spritecode.Length-1,1);
+
+            //Arms
+            switch (spritecode[0])
+            {
+                case '1':
+                    arms = "steepling";
+                    left = "1l";
+                    right = "1r";
+                    break;
+                case '2':
+                    arms = "crossed";
+                    left = "1l";
+                    right = "2r";
+                    break;
+                case '3':
+                    arms = "restleftpointright";
+                    left = "2l";
+                    right = "1r";
+                    break;
+                case '4':
+                    arms = "pointright";
+                    left = "2l";
+                    right = "2r";
+                    break;
+                case '5':
+                    arms = "def";
+                    head = "";
+                    break;
+                case '6':
+                    arms = "down";
+                    left = "1l";
+                    right = "1r";
+                    break;
+            }
 
             //Sweat drop
             if (spritecode.Contains("sdl"))
@@ -275,143 +415,6 @@ namespace ATLifier
             {
                 tears = "up";
                 spritecode.Replace("tu","");
-            }
-
-            //Eyes
-            switch (spritecode[1])
-            {
-                case 'e':
-                    eyes = "normal";
-                    break;
-                case 'w':
-                    eyes = "wide";
-                    break;
-                case 's':
-                    eyes = "sparkle";
-                    break;
-                case 't':
-                    eyes = "smug";
-                    break;
-                case 'c':
-                    eyes = "crazy";
-                    break;
-                case 'r':
-                    eyes = "right";
-                    break;
-                case 'l':
-                    eyes = "left";
-                    break;
-                case 'h':
-                    eyes = "closedhappy";
-                    break;
-                case 'd':
-                    eyes = "closedsad";
-                    break;
-                case 'k':
-                    eyes = "winkleft";
-                    break;
-                case 'n':
-                    eyes = "winkright";
-                    break;
-            }
-
-            //Eyebrows
-            switch (spritecode[2])
-            {
-                case 'f':
-                    eyebrows = "furrowed";
-                    break;
-                case 'u':
-                    eyebrows = "up";
-                    break;
-                case 'k':
-                    eyebrows = "knit";
-                    break;
-                case 's':
-                    eyebrows = "mid";
-                    break;
-                case 't':
-                    eyebrows = "think";
-                    break;
-            }
-
-            //Mouth
-            switch (spritecode[spritecode.Length-1])
-            {
-                case 'a':
-                    mouth = "smile";
-                    head = "a";
-                    break;
-                case 'b':
-                    mouth = "big";
-                    head = "b";
-                    break;
-                case 'c':
-                    mouth = "smirk";
-                    head = "h";
-                    break;
-                case 'd':
-                    mouth = "small";
-                    head = "i";
-                    break;
-                case 'o':
-                    mouth = "gasp";
-                    head = "d";
-                    break;
-                case 'u':
-                    mouth = "smug";
-                    head = "j";
-                    break;
-                case 'w':
-                    mouth = "wide";
-                    head = "b";
-                    break;
-                case 'x':
-                    mouth = "disgust";
-                    head = "f";
-                    break;
-                case 'p':
-                    mouth = "pout";
-                    head = "h";
-                    break;
-                case 't':
-                    mouth = "triangle";
-                    head = "a";
-                    break;
-            }
-
-            //Arms
-            switch (spritecode[0])
-            {
-                case '1':
-                    arms = "steepling";
-                    left = "1l";
-                    right = "1r";
-                    break;
-                case '2':
-                    arms = "crossed";
-                    left = "1l";
-                    right = "2r";
-                    break;
-                case '3':
-                    arms = "restleftpointright";
-                    left = "2l";
-                    right = "1r";
-                    break;
-                case '4':
-                    arms = "pointright";
-                    left = "2l";
-                    right = "2r";
-                    break;
-                case '5':
-                    arms = "def";
-                    head = "";
-                    break;
-                case '6':
-                    arms = "down";
-                    left = "1l";
-                    right = "1r";
-                    break;
             }
 
             return new MonikaSprite(
@@ -616,7 +619,7 @@ namespace ATLifier
             sprite_def.Add($"    {spr.method},");
             sprite_def.Add($"    {spr.character},");
             sprite_def.Add($"    eyes=\"{spr.eyes}\",");
-            sprite_def.Add($"    eyebrows=\"{spr.eyes}\",");
+            sprite_def.Add($"    eyebrows=\"{spr.eyebrows}\",");
             sprite_def.Add($"    nose=\"{spr.nose}\",");
             sprite_def.Add($"    mouth=\"{spr.mouth}\",");
 
@@ -631,6 +634,13 @@ namespace ATLifier
             sprite_def.Add($"    left=\"{spr.left}\",");
             sprite_def.Add($"    right=\"{spr.right}\",");
             sprite_def.Add($"    arms=\"{spr.arms}\",");
+
+            if (spr.arms == "def")
+            {
+                sprite_def.Add("    lean=\"def\",");
+                sprite_def.Add("    single=\"3b\"");
+            }
+
             sprite_def.Add(")");
             sprite_def.Add("");
             return sprite_def;
@@ -666,6 +676,99 @@ namespace ATLifier
             this.tears = tears;
             this.mouth = mouth;
             this.arms = arms;
+
+            //Head
+            if (head=="")
+            {
+                switch (mouth)
+                {
+                    case "smile":
+                        head = "a";
+                        break;
+
+                    case "big":
+                        head = "b";
+                        break;
+
+                    case "smirk":
+                        head = "h";
+                        break;
+
+                    case "small":
+                        head = "i";
+                        break;
+
+                    case "gasp":
+                        head = "d";
+                        break;
+
+                    case "smug":
+                        head = "j";
+                        break;
+
+                    case "wide":
+                        head = "b";
+                        break;
+
+                    case "disgust":
+                        head = "f";
+                        break;
+
+                    case "pout":
+                        head = "h";
+                        break;
+
+                    case "triangle":
+                        head = "a";
+                        break;
+                }
+            }
+            else
+                this.head=head;
+
+            //Left/Right
+            if (left == "" && right == "")
+            {
+                switch (arms)
+                {
+                    case "steepling":
+                        left = "1l";
+                        right = "1r";
+                        break;
+
+                    case "crossed":
+                        left = "1l";
+                        right = "2r";
+                        break;
+
+                    case "restleftpointright":
+                        left = "2l";
+                        right = "1r";
+                        break;
+
+                    case "pointright":
+                        left = "2l";
+
+                        right = "2r";
+                        break;
+
+                    case "def":
+                        head = "";
+                        left = "";
+                        right = "";
+                        break;
+
+                    case "down":
+                        left = "1l";
+                        right = "1r";
+                        break;
+                }
+            }
+            else
+            {
+                this.left = left;
+                this.right = right;
+            }
         }
     }
 }
