@@ -195,11 +195,11 @@ namespace ATLifier
             new_sprite_def.Add($"        \"monika {GetSpriteCode(old_sprite_def[0])}_static\"");
             new_sprite_def.Add("        block:");
             new_sprite_def.Add("            choice:");
+            new_sprite_def.Add("                3");
+            new_sprite_def.Add("            choice:");
             new_sprite_def.Add("                5");
             new_sprite_def.Add("            choice:");
             new_sprite_def.Add("                7");
-            new_sprite_def.Add("            choice:");
-            new_sprite_def.Add("                9");
             new_sprite_def.Add($"        \"monika {GetSpriteCodeFromObject(spr)}_static\"");
             new_sprite_def.Add("        0.05");
             new_sprite_def.Add("        repeat");
