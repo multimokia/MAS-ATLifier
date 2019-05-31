@@ -1,169 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using folderStuffs;
-
 namespace ATLifier
 {
     class Program
     {
         static void Main(string[] args)
         {
-            //Set up our file io
-            FolderReview file = new FolderReview();
+            List<string> spritedef = new List<string>();
 
-            //Data from sprite chart
-            List<string> sprite_chart_old = file.read("sprite-chart.rpy","Old");
+            Console.WriteLine("Please enter the spritecode for the sprite you want to generate: ");
+            string spritecode = Console.ReadLine();
 
-            //The new sprite chart
-            List<string> sprite_chart_new = new List<string>();
-
-            //Existing sprite codes
-            List<string> existing_sprite_codes = new List<string>();
-
-            //The data we want:
-            List<List<string>> sprite_definitions_old = new List<List<string>>();
-
-            //Renamed old sprite defs
-            List<string> sprite_definitions_old_renamed = new List<string>();
-
-            //The new sprite defs
-            List<string> sprite_definitions_new = new List<string>();
-
-            //ATL sprite chart
-            List<string> sprite_chart_two = new List<string>();
-
-            //List of sprites we're adding that need to be aliased
-            List<string> codes_to_alias = new List<string>();
-
-            int line_count = 0;
-            bool done = false;
-            //Now we go thru the data
-            //First, we get rid of the 4k lines of code
-            foreach (string line in sprite_chart_old)
+            if (new List<char>{'h','d'}.Contains(spritecode[1]))
             {
-                if (line.Contains("image monika") && line.Contains("DynamicDisplayable"))
-                    for (int i=sprite_chart_old.LastIndexOf(line);i<sprite_chart_old.LastIndexOf(line)+7;i++)
-                        if (sprite_chart_old[i].Contains("eyes="))
-                            if (!(sprite_chart_old[i].Contains("closedsad") || sprite_chart_old[i].Contains("closedhappy") || sprite_chart_old[i].Contains("wink")))
-                                    done = true;
-
-                if (done)
-                    break;
-
-                sprite_chart_new.Add(line);
-                line_count++;
-            }
-            sprite_chart_old.RemoveRange(0,line_count);
-
-            //Now we iter and get all the sprite defs as string lists
-            List<string> sprite = new List<string>();
-
-            foreach (string line in sprite_chart_old)
-            {
-                if (line.Contains("image monika") && line.Contains("DynamicDisplayable"))
-                {
-                    //Don't add this if it's not needed
-                    if (sprite.Count != 0)
-                        sprite_definitions_old.Add(sprite);
-
-                    //Reset this
-                    sprite = new List<string>();
-                }
-
-                //This is all excess stuff that we want, but not for amending sprites
-                if (line.Contains("### [IMG032]"))
-                    break;
-
-                sprite.Add(line);
+                //We're generating a sprite which doesn't need an atl vers
+                spritedef = BuildOldSprite(GetSpriteFromCode(spritecode));
+                spritedef.Add("");
+                spritedef.Add(BuildSpriteAlias(spritecode));
             }
 
-            //Add the last sprite
-            sprite_definitions_old.Add(sprite);
-
-            //Get a list of all defined sprites
-            foreach (List<string> strL in sprite_definitions_old)
+            else
             {
-                existing_sprite_codes.Add(GetSpriteCode(strL[0]));
+                //We are generating a sprite which needs atl
+                List<string> oldspritedef = BuildOldSprite(GetSpriteFromCode(spritecode));
+                oldspritedef[0] = oldspritedef[0].Replace("_static","");
+                spritedef = CreateNewSprite(oldspritedef);
+                spritedef.Add("");
+                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(spritecode)));
+
+                //Now we get the eyes closed version
+                string closedeyes = spritecode[0].ToString() + "d" + spritecode.Substring(2,spritecode.Length-2);
+                spritedef.Add("");
+                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(closedeyes)));
+                spritedef.Add("");
+                spritedef.Add(BuildSpriteAlias(closedeyes));
             }
 
-            //Get rid of all the sprites so all that's left is the extra defs/ATLs
-            foreach (List<string> strL in sprite_definitions_old)
+            foreach (string line in spritedef)
             {
-                foreach (string s in strL)
-                {
-                    sprite_chart_old.Remove(s);
-                }
+                Console.WriteLine(line);
             }
 
-            //Now we create and add our new sprite objects
-            int count = 0;
-            foreach (List<string> strL in sprite_definitions_old)
-            {
-                MonikaSprite spr = GetSpriteFromCode(existing_sprite_codes[count]);
-                spr.eyes = "closedsad";
-
-                if (!existing_sprite_codes.Contains(GetSpriteCodeFromObject(spr)))
-                {
-                    codes_to_alias.Add(GetSpriteCodeFromObject(spr));
-                    sprite_definitions_old_renamed.AddRange(BuildOldSprite(spr));
-                }
-
-                sprite_definitions_new.AddRange(CreateNewSprite(strL));
-                count++;
-            }
-
-            foreach (List<string> strL in sprite_definitions_old)
-            {
-                sprite_definitions_old_renamed.AddRange(AdjustSpriteName(strL));
-            }
-
-            //Build a list of sprites we need to alias
-            foreach (string spritestr in existing_sprite_codes)
-            {
-                char eyes = spritestr[1];
-                if (eyes == 'h' || eyes == 'd' || eyes == 'k' || eyes == 'n')
-                    codes_to_alias.Add(spritestr);
-            }
-
-            sprite_chart_new.AddRange(sprite_definitions_old_renamed);
-
-            //Now we get everything up to the aliases
-            List<string> curr_aliases = new List<string>();
-            line_count = 0;
-            foreach (string s in sprite_chart_old)
-            {
-                if (s == "### [IMG040]")
-                    break;
-
-                curr_aliases.Add(s);
-                line_count++;
-            }
-            sprite_chart_old.RemoveRange(0,line_count);
-
-            sprite_chart_new.AddRange(curr_aliases);
-            sprite_chart_new.Add("#closedhappy/closedsad/wink aliases");
-
-            codes_to_alias.Sort();
-            char last_pose_numb = '1';
-            sprite_chart_new.Add("#Pose 1");
-            foreach (string s in codes_to_alias)
-            {
-                if (s[0] != last_pose_numb)
-                {
-                    sprite_chart_new.Add("");
-                    sprite_chart_new.Add($"#Pose {s[0]}");
-                    last_pose_numb = s[0];
-                }
-                sprite_chart_new.Add(BuildSpriteAlias(s));
-            }
-
-            sprite_chart_new.Add("");
-            sprite_chart_new.AddRange(sprite_chart_old);
-            sprite_chart_two.AddRange(sprite_definitions_new);
-
-            file.create("sprite-chart.rpy","New",sprite_chart_new,overwrite: true);
-            file.create("sprite-chart-01.rpy","New",sprite_chart_two,overwrite: true);
+            //Keep VSC open
+            Console.WriteLine("Press enter to quit.");
+            Console.ReadLine();
         }
 
         public static string BuildSpriteAlias(string spritecode)
