@@ -11,6 +11,7 @@ namespace ATLifier
 
             Console.WriteLine("Please enter the spritecode for the sprite you want to generate: ");
             string spritecode = Console.ReadLine();
+            Console.Clear();
 
             if (new List<char>{'h','d'}.Contains(spritecode[1]))
             {
@@ -18,6 +19,21 @@ namespace ATLifier
                 spritedef = BuildOldSprite(GetSpriteFromCode(spritecode));
                 spritedef.Add("");
                 spritedef.Add(BuildSpriteAlias(spritecode));
+            }
+
+            else if (new List<char>{'k','n'}.Contains(spritecode[1]))
+            {
+                //We're generating a wink sprite
+                List<string> oldspritedef = BuildOldSprite(GetSpriteFromCode(spritecode));
+                oldspritedef[0] = oldspritedef[0].Replace("_static","");
+                spritedef = BuildWinkSprite(GetSpriteFromCode(spritecode));
+                spritedef.Add("");
+                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(spritecode)));
+
+                //Now we get the normal eyes version
+                string normaleyes = spritecode[0].ToString() + "e" + spritecode.Substring(2,spritecode.Length-2);
+                spritedef.Add("");
+                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(normaleyes)));
             }
 
             else
@@ -86,6 +102,55 @@ namespace ATLifier
             new_sprite_def.Add("        repeat");
             new_sprite_def.Add("");
             return new_sprite_def;
+        }
+
+        public static List<string> BuildOldSprite(MonikaSprite spr)
+        {
+            List<string> sprite_def = new List<string>();
+
+            sprite_def.Add($"image monika {GetSpriteCodeFromObject(spr)}_static = DynamicDisplayable(");
+            sprite_def.Add($"    {spr.method},");
+            sprite_def.Add($"    {spr.character},");
+            sprite_def.Add($"    eyes=\"{spr.eyes}\",");
+            sprite_def.Add($"    eyebrows=\"{spr.eyebrows}\",");
+            sprite_def.Add($"    nose=\"{spr.nose}\",");
+            sprite_def.Add($"    mouth=\"{spr.mouth}\",");
+
+            if (spr.blush != "")
+                sprite_def.Add($"    blush=\"{spr.blush}\",");
+            if (spr.tears != "")
+                sprite_def.Add($"    tears=\"{spr.tears}\",");
+            if (spr.sweat != "")
+                sprite_def.Add($"    sweat=\"{spr.sweat}\",");
+
+            sprite_def.Add($"    head=\"{spr.head}\",");
+            sprite_def.Add($"    left=\"{spr.left}\",");
+            sprite_def.Add($"    right=\"{spr.right}\",");
+            sprite_def.Add($"    arms=\"{spr.arms}\",");
+
+            if (spr.arms == "def")
+            {
+                sprite_def.Add("    lean=\"def\",");
+                sprite_def.Add("    single=\"3b\"");
+            }
+
+            sprite_def.Add(")");
+            sprite_def.Add("");
+            return sprite_def;
+        }
+
+        public static List<string> BuildWinkSprite(MonikaSprite spr)
+        {
+            List<string> sprite_def = new List<string>();
+
+            sprite_def.Add($"image monika {GetSpriteCodeFromObject(spr)}:");
+            sprite_def.Add("    block:");
+            sprite_def.Add($"       \"{GetSpriteCodeFromObject(spr)}_static\"");
+            sprite_def.Add("        1");
+
+            spr.eyes="normal";
+            sprite_def.Add($"       \"{GetSpriteCodeFromObject(spr)}\"");
+            return sprite_def;
         }
 
         public static string GetSpriteCode(string line)
@@ -490,41 +555,6 @@ namespace ATLifier
             }
 
             return arms + eyes + eyebrows + blush + tears + sweat + mouth;
-        }
-
-        public static List<string> BuildOldSprite(MonikaSprite spr)
-        {
-            List<string> sprite_def = new List<string>();
-
-            sprite_def.Add($"image monika {GetSpriteCodeFromObject(spr)}_static = DynamicDisplayable(");
-            sprite_def.Add($"    {spr.method},");
-            sprite_def.Add($"    {spr.character},");
-            sprite_def.Add($"    eyes=\"{spr.eyes}\",");
-            sprite_def.Add($"    eyebrows=\"{spr.eyebrows}\",");
-            sprite_def.Add($"    nose=\"{spr.nose}\",");
-            sprite_def.Add($"    mouth=\"{spr.mouth}\",");
-
-            if (spr.blush != "")
-                sprite_def.Add($"    blush=\"{spr.blush}\",");
-            if (spr.tears != "")
-                sprite_def.Add($"    tears=\"{spr.tears}\",");
-            if (spr.sweat != "")
-                sprite_def.Add($"    sweat=\"{spr.sweat}\",");
-
-            sprite_def.Add($"    head=\"{spr.head}\",");
-            sprite_def.Add($"    left=\"{spr.left}\",");
-            sprite_def.Add($"    right=\"{spr.right}\",");
-            sprite_def.Add($"    arms=\"{spr.arms}\",");
-
-            if (spr.arms == "def")
-            {
-                sprite_def.Add("    lean=\"def\",");
-                sprite_def.Add("    single=\"3b\"");
-            }
-
-            sprite_def.Add(")");
-            sprite_def.Add("");
-            return sprite_def;
         }
     }
 
