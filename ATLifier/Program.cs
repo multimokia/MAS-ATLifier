@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using folderStuffs;
 
@@ -23,6 +24,9 @@ namespace ATLifier
 
             //The data we want:
             List<List<string>> sprite_definitions_old = new List<List<string>>();
+
+            //The not duped data we want:
+            List<List<string>> sprite_defs_old_not_dupe = new List<List<string>>();
 
             //Renamed old sprite defs
             List<string> sprite_definitions_old_renamed = new List<string>();
@@ -65,7 +69,21 @@ namespace ATLifier
                 {
                     //Don't add this if it's not needed
                     if (sprite.Count != 0)
+                    {
                         sprite_definitions_old.Add(sprite);
+                        bool add = true;
+
+                        foreach (List<string> strL in sprite_definitions_old)
+                        {
+                            if (strL[0] == line)
+                            {
+                                add = false;
+                                break;
+                            }
+                        }
+                        if (add)
+                            sprite_defs_old_not_dupe.Add(sprite);
+                    }
 
                     //Reset this
                     sprite = new List<string>();
@@ -73,18 +91,29 @@ namespace ATLifier
 
                 //This is all excess stuff that we want, but not for amending sprites
                 if (line.Contains("### [IMG032]"))
+                {
+                    //Add the last sprite
+                    sprite_definitions_old.Add(sprite);
+                    sprite_defs_old_not_dupe.Add(sprite);
                     break;
+                }
 
                 sprite.Add(line);
             }
 
-            //Add the last sprite
-            sprite_definitions_old.Add(sprite);
 
             //Get a list of all defined sprites
-            foreach (List<string> strL in sprite_definitions_old)
+            foreach (List<string> strL in sprite_defs_old_not_dupe)
             {
                 existing_sprite_codes.Add(GetSpriteCode(strL[0]));
+            }
+
+            //Build a list of sprites we need to alias
+            foreach (string spritestr in existing_sprite_codes)
+            {
+                char eyes = spritestr[1];
+                if (eyes == 'h' || eyes == 'd' || eyes == 'k' || eyes == 'n')
+                    codes_to_alias.Add(spritestr);
             }
 
             //Get rid of all the sprites so all that's left is the extra defs/ATLs
@@ -98,7 +127,7 @@ namespace ATLifier
 
             //Now we create and add our new sprite objects
             int count = 0;
-            foreach (List<string> strL in sprite_definitions_old)
+            foreach (List<string> strL in sprite_defs_old_not_dupe)
             {
                 MonikaSprite spr = GetSpriteFromCode(existing_sprite_codes[count]);
                 spr.eyes = "closedsad";
@@ -107,23 +136,16 @@ namespace ATLifier
                 {
                     codes_to_alias.Add(GetSpriteCodeFromObject(spr));
                     sprite_definitions_old_renamed.AddRange(BuildOldSprite(spr));
+                    existing_sprite_codes.Add(GetSpriteCodeFromObject(spr));
                 }
 
                 sprite_definitions_new.AddRange(CreateNewSprite(strL));
                 count++;
             }
 
-            foreach (List<string> strL in sprite_definitions_old)
+            foreach (List<string> strL in sprite_defs_old_not_dupe)
             {
                 sprite_definitions_old_renamed.AddRange(AdjustSpriteName(strL));
-            }
-
-            //Build a list of sprites we need to alias
-            foreach (string spritestr in existing_sprite_codes)
-            {
-                char eyes = spritestr[1];
-                if (eyes == 'h' || eyes == 'd' || eyes == 'k' || eyes == 'n')
-                    codes_to_alias.Add(spritestr);
             }
 
             sprite_chart_new.AddRange(sprite_definitions_old_renamed);
@@ -511,7 +533,7 @@ namespace ATLifier
                 case "mid":
                     eyebrows="s";
                     break;
-                case "thinking":
+                case "think":
                     eyebrows="t";
                     break;
             }
