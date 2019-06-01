@@ -1,24 +1,148 @@
 ﻿using System;
 using System.Collections.Generic;
 
+using folderStuffs;
 namespace ATLifier
 {
     class Program
     {
         static void Main(string[] args)
         {
-            List<string> spritedef = new List<string>();
+            //START: Variable declaration
+            //Set up our file io
+            FolderReview file = new FolderReview();
 
+            //Data from sprite chart
+            List<string> sprite_chart_old = file.read("sprite-chart.rpy","Old");
+
+            //The new sprite chart
+            List<string> sprite_chart_new = new List<string>();
+
+            //Existing sprite codes
+            List<string> existing_sprite_codes = new List<string>();
+
+            //The data we want:
+            List<List<string>> sprite_definitions_old = new List<List<string>>();
+
+            //The not duped data we want:
+            List<List<string>> sprite_defs_old_not_dupe = new List<List<string>>();
+
+            //Renamed old sprite defs
+            List<string> sprite_definitions_old_renamed = new List<string>();
+
+            //The new sprite defs
+            List<string> sprite_definitions_new = new List<string>();
+
+            //ATL sprite chart
+            List<string> sprite_chart_two = new List<string>();
+
+            //List of sprites we're adding that need to be aliased
+            List<string> codes_to_alias = new List<string>();
+
+            int line_count = 0;
+            bool done = false;
+
+            //START: sprite-chart.rpy reading.
+            //Now we go thru the data
+            //First, we get rid of the 4k lines of code
+            foreach (string line in sprite_chart_old)
+            {
+                if (line.Contains("image monika") && line.Contains("DynamicDisplayable"))
+                    for (int i=sprite_chart_old.LastIndexOf(line);i<sprite_chart_old.LastIndexOf(line)+7;i++)
+                        if (sprite_chart_old[i].Contains("eyes="))
+                            if (!(sprite_chart_old[i].Contains("closedsad") || sprite_chart_old[i].Contains("closedhappy") || sprite_chart_old[i].Contains("wink")))
+                                    done = true;
+
+                if (done)
+                    break;
+
+                sprite_chart_new.Add(line);
+                line_count++;
+            }
+            sprite_chart_old.RemoveRange(0,line_count);
+
+            //Now we iter and get all the sprite defs as string lists
+            List<string> sprite = new List<string>();
+
+            foreach (string line in sprite_chart_old)
+            {
+                if (line.Contains("image monika") && line.Contains("DynamicDisplayable"))
+                {
+                    //Don't add this if it's not needed
+                    if (sprite.Count != 0)
+                    {
+                        sprite_definitions_old.Add(sprite);
+                        bool add = true;
+
+                        foreach (List<string> strL in sprite_definitions_old)
+                        {
+                            if (strL[0] == line)
+                            {
+                                add = false;
+                                break;
+                            }
+                        }
+                        if (add)
+                            sprite_defs_old_not_dupe.Add(sprite);
+                    }
+
+                    //Reset this
+                    sprite = new List<string>();
+                }
+
+                //This is all excess stuff that we want, but not for amending sprites
+                if (line.Contains("### [IMG032]"))
+                {
+                    //Add the last sprite
+                    sprite_definitions_old.Add(sprite);
+                    sprite_defs_old_not_dupe.Add(sprite);
+                    break;
+                }
+
+                sprite.Add(line);
+            }
+
+
+            //Get a list of all defined sprites
+            foreach (List<string> strL in sprite_defs_old_not_dupe)
+            {
+                existing_sprite_codes.Add(GetSpriteCode(strL[0]));
+            }
+
+            //Get rid of all the sprites so all that's left is the extra defs/ATLs
+            foreach (List<string> strL in sprite_definitions_old)
+            {
+                foreach (string s in strL)
+                {
+                    sprite_chart_old.Remove(s);
+                }
+            }
+
+            //START: (TODO:) sprite-chart-01.rpy reading
+
+            //START: User IN + addition of user requested sprites
             Console.WriteLine("Please enter the spritecode for the sprite you want to generate: ");
             string spritecode = Console.ReadLine();
             Console.Clear();
 
+            //If the sprite exists already, don't bother doing anything
+            if (existing_sprite_codes.Contains(spritecode+"_static"))
+            {
+                Console.WriteLine("The sprite requested already exists.\nQuitting.");
+                Environment.Exit(0);
+            }
+
+            List<string> spritedef = new List<string>();
+
             if (new List<char>{'h','d'}.Contains(spritecode[1]))
             {
                 //We're generating a sprite which doesn't need an atl vers
-                spritedef = BuildOldSprite(GetSpriteFromCode(spritecode));
+                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(spritecode)));
                 spritedef.Add("");
-                spritedef.Add(BuildSpriteAlias(spritecode));
+                sprite_defs_old_not_dupe.Add(spritedef);
+
+                //TODO: Move this somewhere else
+                //spritedef.Add(BuildSpriteAlias(spritecode));
             }
 
             else if (new List<char>{'k','n'}.Contains(spritecode[1]))
@@ -32,8 +156,11 @@ namespace ATLifier
 
                 //Now we get the normal eyes version
                 string normaleyes = spritecode[0].ToString() + "e" + spritecode.Substring(2,spritecode.Length-2);
-                spritedef.Add("");
-                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(normaleyes)));
+                if (!existing_sprite_codes.Contains(normaleyes+"_static"))
+                {
+                    spritedef.Add("");
+                    spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(normaleyes)));
+                }
             }
 
             else
