@@ -392,7 +392,7 @@ namespace ATLifier
                 case "mid":
                     eyebrows="s";
                     break;
-                case "thinking":
+                case "think":
                     eyebrows="t";
                     break;
             }
