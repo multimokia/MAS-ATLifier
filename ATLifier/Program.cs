@@ -16,6 +16,7 @@ namespace ATLifier
             //Get paths
             string path=System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
             string gamedir = path.Substring(0,path.IndexOf("MonikaModDev\\")+13)+"Monika After Story\\game\\";
+            //gamedir = @"C:\Users\User\Documents\Visual Studio 2017\Projects\ATLifier\ATLifier\";
 
             //Data from sprite-chart.rpy
             List<string> sprite_chart_old = file.read("sprite-chart.rpy",gamedir);
@@ -40,7 +41,6 @@ namespace ATLifier
             List<string> sprite_chart_two = new List<string>();
 
             int line_count = 0;
-            bool done = false;
 
             //START: sprite-chart.rpy reading.
             //Now we go thru the data
@@ -48,12 +48,6 @@ namespace ATLifier
             foreach (string line in sprite_chart_old)
             {
                 if (line.Contains("image monika") && line.Contains("DynamicDisplayable"))
-                    for (int i=sprite_chart_old.LastIndexOf(line);i<sprite_chart_old.LastIndexOf(line)+7;i++)
-                        if (sprite_chart_old[i].Contains("eyes="))
-                            if (!(sprite_chart_old[i].Contains("closedsad") || sprite_chart_old[i].Contains("closedhappy") || sprite_chart_old[i].Contains("wink")))
-                                    done = true;
-
-                if (done)
                     break;
 
                 sprite_chart_new.Add(line);
@@ -142,7 +136,10 @@ namespace ATLifier
 
                 //Skip comments and whitespace, we'll add these back later
                 if (line.StartsWith("#") || line == "")
+                {
+                    line_count++;
                     continue;
+                }
 
                 curr_aliases.Add(line);
                 line_count++;
@@ -182,6 +179,9 @@ namespace ATLifier
                 sprite.Add(line);
             }
 
+            //Add the last sprite
+            sprite_defs_new_not_dupe.Add(sprite);
+
             //START: User IN + addition of user requested sprites
             Console.WriteLine("Please enter the spritecode for the sprite you want to generate: ");
             string spritecode = Console.ReadLine();
@@ -198,10 +198,9 @@ namespace ATLifier
             if (new List<char>{'h','d'}.Contains(spritecode[1]))
             {
                 //We're generating a sprite which doesn't need an atl vers
-                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(spritecode)));
-                spritedef.Add("");
-                sprite_defs_old_not_dupe.Add(spritedef);
+                sprite_defs_old_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(spritecode)));
 
+                //Now build the alias
                 curr_aliases.Add(BuildSpriteAlias(spritecode));
             }
 
@@ -217,7 +216,7 @@ namespace ATLifier
                 //Now we add the old sprite to the old sprite defs
                 sprite_defs_old_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(spritecode)));
 
-                //Now we get the normal eyes version
+                //Now we build the normal eyes version if it doesn't exist
                 string normaleyes = spritecode[0].ToString() + "e" + spritecode.Substring(2,spritecode.Length-2);
                 if (!existing_sprite_codes.Contains(normaleyes+"_static"))
                 {
@@ -243,7 +242,7 @@ namespace ATLifier
                 //Make the closed eyes version if it doesn't already exist
                 if (!existing_sprite_codes.Contains(closedeyes+"_static"))
                 {
-                    sprite_defs_new_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(closedeyes)));
+                    sprite_defs_old_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(closedeyes)));
 
                     curr_aliases.Add(BuildSpriteAlias(closedeyes));
                 }
@@ -251,8 +250,8 @@ namespace ATLifier
 
             //Now we sort everything
             int mult = true ? 1:-1;
-            sprite_defs_old_not_dupe.Sort((a,b) => mult * a[0].CompareTo(b[0]));
-            sprite_definitions_new.Sort((a,b) => mult * a[0].CompareTo(b[0]));
+            sprite_defs_old_not_dupe.Sort((a,b) => mult * GetSpriteCode(a[0]).CompareTo(GetSpriteCode(b[0])));
+            sprite_defs_new_not_dupe.Sort((a,b) => mult * GetATLSpriteCode(a[0]).CompareTo(GetATLSpriteCode(b[0])));
             curr_aliases.Sort();
 
             //START: File combinations
@@ -269,24 +268,38 @@ namespace ATLifier
                 sprite_chart_new.Add(line);
 
             //Now the aliases we gen'd
+            sprite_chart_new.Add("#closedhappy/closedsad/wink aliases");
             char last_pose_numb = '1';
             foreach (string line in curr_aliases)
             {
-                if (line[0] != last_pose_numb)
+                if (line[13] != last_pose_numb)
                 {
                     sprite_chart_new.Add("");
-                    sprite_chart_new.Add($"#Pose {line[0]}");
-                    last_pose_numb = line[0];
+                    sprite_chart_new.Add($"#Pose {line[13]}");
+                    last_pose_numb = line[13];
                 }
-                sprite_chart_new.Add(line);
+                if (!sprite_chart_new.Contains(line))
+                    sprite_chart_new.Add(line);
+            }
+            //Add a space before the next section
+            sprite_chart_new.Add("");
+
+            //Now the rest of the old sprite chart
+            sprite_chart_new.AddRange(sprite_chart_old);
+
+            //sprite-chart-01.rpy
+            foreach (List<string> strL in sprite_defs_new_not_dupe)
+            {
+                sprite_chart_two.AddRange(strL);
             }
 
             //START: File writing
             //Populate the files
-            file.create("sprite-chart.rpy",gamedir, sprite_chart_new,overwrite: true);
-            file.create("sprite-chart-01.rpy",gamedir, sprite_chart_two, overwrite: true);
+            file.create("sprite-chart.rpy", gamedir, sprite_chart_new, overwrite: true);
+            file.create("sprite-chart-01.rpy", gamedir, sprite_chart_two, overwrite: true);
         }
 
+        //START: Helper methods
         public static string BuildSpriteAlias(string spritecode)
         {
             return $"image monika {spritecode} = \"monika {spritecode + "_static"}\"";
@@ -369,17 +382,22 @@ namespace ATLifier
 
             sprite_def.Add($"image monika {GetSpriteCodeFromObject(spr)}:");
             sprite_def.Add("    block:");
-            sprite_def.Add($"       \"{GetSpriteCodeFromObject(spr)}_static\"");
+            sprite_def.Add($"        \"monika {GetSpriteCodeFromObject(spr)}_static\"");
             sprite_def.Add("        1");
 
             spr.eyes="normal";
-            sprite_def.Add($"       \"{GetSpriteCodeFromObject(spr)}\"");
+            sprite_def.Add($"        \"monika {GetSpriteCodeFromObject(spr)}\"");
             return sprite_def;
         }
 
         public static string GetSpriteCode(string line)
         {
             return line.Substring(13, line.IndexOf("=") - 14);
+        }
+
+        public static string GetATLSpriteCode(string line)
+        {
+            return line.Substring(13, line.IndexOf(":")-13);
         }
 
         public static MonikaSprite GetSpriteFromCode(string spritecode)
