@@ -14,7 +14,7 @@ namespace folderStuffs
         /// <returns><see cref="bool"/> true if exists, false otherwise</returns>
         public Boolean exists(string filename, string filepath)
         {
-            return (File.Exists(filepath + "/" + filename));
+            return (File.Exists(filepath + filename));
         }
 
         //START: File creation/modifying methods
@@ -41,7 +41,7 @@ namespace folderStuffs
                         createPath(filepath);
 
                     //Now we do the rest
-                    var file = File.Create(filepath + "/" + filename);
+                    var file = File.Create(filepath + filename);
                     file.Close();
                     Console.WriteLine("Create, no data - File creation successful");
                     return (1);
@@ -79,7 +79,7 @@ namespace folderStuffs
             create(filename, filepath);
 
             //Write to the file
-            using (StreamWriter sw = File.AppendText(filepath + "/" + filename))
+            using (StreamWriter sw = File.AppendText(filepath + filename))
             {
                 try
                 {
@@ -118,7 +118,7 @@ namespace folderStuffs
             create(filename, filepath);
 
             //Write to the file
-            using (StreamWriter sw = File.AppendText(filepath + "/" + filename))
+            using (StreamWriter sw = File.AppendText(filepath + filename))
             {
                 try
                 {
@@ -178,12 +178,12 @@ namespace folderStuffs
                 if (!Directory.Exists(filepath))
                     createPath(filepath);
 
-                var file = File.Create(path: filepath + "/" + filename);
+                var file = File.Create(path: filepath + filename);
                 file.Close();
                 Console.WriteLine(1);
 
                 //Our file to write to
-                using (StreamWriter sw = File.AppendText(filepath + "/" + filename))
+                using (StreamWriter sw = File.AppendText(filepath + filename))
                 {
                     try
                     {
@@ -222,8 +222,8 @@ namespace folderStuffs
             {
                 try
                 {
-                    File.SetAttributes(filepath + "/" + filename, FileAttributes.Normal);
-                    File.Delete(filepath + "/" + filename);
+                    File.SetAttributes(filepath + filename, FileAttributes.Normal);
+                    File.Delete(filepath + filename);
                     Console.WriteLine("Delete - File deletion successful");
                     return (1);
                 }
@@ -249,7 +249,7 @@ namespace folderStuffs
                 return (new List<string>(new string[] {""}));
 
             //The streamreader
-            StreamReader sr = new StreamReader(filepath + "/" + filename);
+            StreamReader sr = new StreamReader(filepath + filename);
 
             //NOTE: To not skip over data we need to store the line
             string line;

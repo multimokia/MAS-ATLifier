@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 using folderStuffs;
 namespace ATLifier
@@ -12,32 +13,31 @@ namespace ATLifier
             //Set up our file io
             FolderReview file = new FolderReview();
 
-            //Data from sprite chart
-            List<string> sprite_chart_old = file.read("sprite-chart.rpy","Old");
+            //Get paths
+            string path=System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+            string gamedir = path.Substring(0,path.IndexOf("MonikaModDev\\")+13)+"Monika After Story\\game\\";
 
-            //The new sprite chart
+            //Data from sprite-chart.rpy
+            List<string> sprite_chart_old = file.read("sprite-chart.rpy",gamedir);
+            //The new sprite-chart.rpy contents
             List<string> sprite_chart_new = new List<string>();
-
             //Existing sprite codes
             List<string> existing_sprite_codes = new List<string>();
-
             //The data we want:
             List<List<string>> sprite_definitions_old = new List<List<string>>();
-
             //The not duped data we want:
             List<List<string>> sprite_defs_old_not_dupe = new List<List<string>>();
+            //List of current aliases
+            List<string> curr_aliases = new List<string>();
 
-            //Renamed old sprite defs
-            List<string> sprite_definitions_old_renamed = new List<string>();
-
+            //Data from sprite-chart-01.rpy
+            List<string> sprite_chart_01_old = file.read("sprite-chart-01.rpy",gamedir);
             //The new sprite defs
-            List<string> sprite_definitions_new = new List<string>();
-
-            //ATL sprite chart
+            List<List<string>> sprite_definitions_new = new List<List<string>>();
+            //The not duped data we want:
+            List<List<string>> sprite_defs_new_not_dupe = new List<List<string>>();
+            //sprite-chart-01.rpy
             List<string> sprite_chart_two = new List<string>();
-
-            //List of sprites we're adding that need to be aliased
-            List<string> codes_to_alias = new List<string>();
 
             int line_count = 0;
             bool done = false;
@@ -118,12 +118,73 @@ namespace ATLifier
                 }
             }
 
-            //START: (TODO:) sprite-chart-01.rpy reading
+            //Now we get the simple sprite aliases
+            List<string> simple_aliases = new List<string>();
+            line_count = 0;
+            foreach (string s in sprite_chart_old)
+            {
+                if (s == "#closedhappy/closedsad/wink aliases")
+                    break;
+
+                simple_aliases.Add(s);
+                line_count++;
+            }
+
+            //Now we remove this from the old sprite chart
+            sprite_chart_old.RemoveRange(0,line_count);
+
+            //And now we get our aliases
+            line_count = 0;
+            foreach (string line in sprite_chart_old)
+            {
+                if (line == "### [IMG040]")
+                    break;
+
+                //Skip comments and whitespace, we'll add these back later
+                if (line.StartsWith("#") || line == "")
+                    continue;
+
+                curr_aliases.Add(line);
+                line_count++;
+            }
+
+            //Now we remove this from the old sprite chart too.
+            sprite_chart_old.RemoveRange(0,line_count);
+
+            //START: sprite-chart-01.rpy reading
+            //Reset this var so we don't get old data
+            sprite = new List<string>();
+            foreach (string line in sprite_chart_01_old)
+            {
+                if (line.Contains("image monika"))
+                {
+                    //Don't add this if it's not needed
+                    if (sprite.Count != 0)
+                    {
+                        sprite_definitions_new.Add(sprite);
+                        bool add = true;
+
+                        foreach (List<string> strL in sprite_definitions_new)
+                        {
+                            if (strL[0].Replace("_static","") == line)
+                            {
+                                add = false;
+                                break;
+                            }
+                        }
+                        if (add)
+                            sprite_defs_new_not_dupe.Add(sprite);
+                    }
+
+                    //Reset this
+                    sprite = new List<string>();
+                }
+                sprite.Add(line);
+            }
 
             //START: User IN + addition of user requested sprites
             Console.WriteLine("Please enter the spritecode for the sprite you want to generate: ");
             string spritecode = Console.ReadLine();
-            Console.Clear();
 
             //If the sprite exists already, don't bother doing anything
             if (existing_sprite_codes.Contains(spritecode+"_static"))
@@ -141,53 +202,89 @@ namespace ATLifier
                 spritedef.Add("");
                 sprite_defs_old_not_dupe.Add(spritedef);
 
-                //TODO: Move this somewhere else
-                //spritedef.Add(BuildSpriteAlias(spritecode));
+                curr_aliases.Add(BuildSpriteAlias(spritecode));
             }
 
             else if (new List<char>{'k','n'}.Contains(spritecode[1]))
             {
-                //We're generating a wink sprite
+                //We're generating a new wink sprite
                 List<string> oldspritedef = BuildOldSprite(GetSpriteFromCode(spritecode));
                 oldspritedef[0] = oldspritedef[0].Replace("_static","");
-                spritedef = BuildWinkSprite(GetSpriteFromCode(spritecode));
-                spritedef.Add("");
-                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(spritecode)));
+
+                //Add this to the new spritedefs
+                sprite_defs_new_not_dupe.Add(BuildWinkSprite(GetSpriteFromCode(spritecode)));
+
+                //Now we add the old sprite to the old sprite defs
+                sprite_defs_old_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(spritecode)));
 
                 //Now we get the normal eyes version
                 string normaleyes = spritecode[0].ToString() + "e" + spritecode.Substring(2,spritecode.Length-2);
                 if (!existing_sprite_codes.Contains(normaleyes+"_static"))
                 {
-                    spritedef.Add("");
-                    spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(normaleyes)));
+                    sprite_defs_old_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(normaleyes)));
                 }
             }
 
             else
             {
-                //We are generating a sprite which needs atl
+                //We are generating a new sprite which needs an ATL vers
                 List<string> oldspritedef = BuildOldSprite(GetSpriteFromCode(spritecode));
                 oldspritedef[0] = oldspritedef[0].Replace("_static","");
-                spritedef = CreateNewSprite(oldspritedef);
-                spritedef.Add("");
-                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(spritecode)));
+
+                //Add the ATL
+                sprite_defs_new_not_dupe.Add(CreateNewSprite(oldspritedef));
+
+                //Then generate the old sprite
+                sprite_defs_old_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(spritecode)));
 
                 //Now we get the eyes closed version
                 string closedeyes = spritecode[0].ToString() + "d" + spritecode.Substring(2,spritecode.Length-2);
-                spritedef.Add("");
-                spritedef.AddRange(BuildOldSprite(GetSpriteFromCode(closedeyes)));
-                spritedef.Add("");
-                spritedef.Add(BuildSpriteAlias(closedeyes));
+
+                //Make the closed eyes version if it doesn't already exist
+                if (!existing_sprite_codes.Contains(closedeyes+"_static"))
+                {
+                    sprite_defs_new_not_dupe.Add(BuildOldSprite(GetSpriteFromCode(closedeyes)));
+
+                    curr_aliases.Add(BuildSpriteAlias(closedeyes));
+                }
             }
 
-            foreach (string line in spritedef)
+            //Now we sort everything
+            int mult = true ? 1:-1;
+            sprite_defs_old_not_dupe.Sort((a,b) => mult * a[0].CompareTo(b[0]));
+            sprite_definitions_new.Sort((a,b) => mult * a[0].CompareTo(b[0]));
+            curr_aliases.Sort();
+
+            //START: File combinations
+            //And now we combine everything
+            //sprite-chart.rpy
+
+            //We already have the initial code
+            //Now we add the spritedefs
+            foreach (List<string> strL in sprite_defs_old_not_dupe)
+                sprite_chart_new.AddRange(strL);
+
+            //Now the simple aliases
+            foreach (string line in simple_aliases)
+                sprite_chart_new.Add(line);
+
+            //Now the aliases we gen'd
+            char last_pose_numb = '1';
+            foreach (string line in curr_aliases)
             {
-                Console.WriteLine(line);
+                if (line[0] != last_pose_numb)
+                {
+                    sprite_chart_new.Add("");
+                    sprite_chart_new.Add($"#Pose {line[0]}");
+                    last_pose_numb = line[0];
+                }
+                sprite_chart_new.Add(line);
             }
 
-            //Keep VSC open
-            Console.WriteLine("Press enter to quit.");
-            Console.ReadLine();
+            //START: File writing
+            //Populate the files
+            file.create("sprite-chart.rpy",gamedir, sprite_chart_new,overwrite: true);
+            file.create("sprite-chart-01.rpy",gamedir, sprite_chart_two, overwrite: true);
         }
 
         public static string BuildSpriteAlias(string spritecode)
