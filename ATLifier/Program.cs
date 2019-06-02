@@ -269,6 +269,8 @@ namespace ATLifier
 
             //Now the aliases we gen'd
             sprite_chart_new.Add("#closedhappy/closedsad/wink aliases");
+            sprite_chart_new.Add("#Pose 1");
+
             char last_pose_numb = '1';
             foreach (string line in curr_aliases)
             {
